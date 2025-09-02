@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  sign-pdf-document:
+    build: .
+    volumes:
+      - .:/app
+      - ./tests:/tests
+    environment:
+      - TEST_DIR=/tests
+    working_dir: /app
+    command: tail -f /dev/null
