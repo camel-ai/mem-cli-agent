@@ -3,8 +3,9 @@ name = "mem-cli-agent"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = "==3.12.*"
 dependencies = [
   "terminal-bench>=0.2.16",
   "openai>=1.0.0",
+  "camel-ai @ git+https://github.com/camel-ai/camel.git@agent-summarize",
 ]

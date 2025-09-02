@@ -1,5 +1,14 @@
 #!/bin/zsh
-tb run \
+
+
+# Test mini agent with terminal bench
+uv run tb run \
     --dataset terminal-bench-core==head \
-    --agent-import-path agent:YourCustomAgent \
+    --agent-import-path agents.mini_agent:MiniAgent \
     --task-id hello-world
+
+# Test camel agent with terminal bench
+uv run tb run \
+    --dataset terminal-bench-core==head \
+    --agent-import-path agents.camel_agent:CamelTerminus \
+    --task-id hello-world    
