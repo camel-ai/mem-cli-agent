@@ -5,12 +5,16 @@ from terminal_bench.agents import BaseAgent
 from terminal_bench.agents.base_agent import AgentResult
 from terminal_bench.terminal.tmux_session import TmuxSession
 from terminal_bench.terminal.models import TerminalCommand
-
+from dotenv import load_dotenv
+load_dotenv()
 
 class MiniAgent(BaseAgent):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY"), 
+            base_url=os.getenv("OPENAI_BASE_URL") or "https://api.openai.com/v1"
+        )
 
     @staticmethod
     def name() -> str:

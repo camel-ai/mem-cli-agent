@@ -56,3 +56,7 @@ logs/
 
 # UV lock file (keep pyproject.toml but ignore lock)
 uv.lock
+
+# .cache
+.cache/
+.camel/
