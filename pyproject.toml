@@ -7,5 +7,5 @@ requires-python = "==3.12.*"
 dependencies = [
   "terminal-bench>=0.2.16",
   "openai>=1.0.0",
-  "camel-ai @ git+https://github.com/camel-ai/camel.git@agent-summarize",
+  "camel-ai @ git+https://github.com/camel-ai/camel.git@7bde8ec",
 ]
