@@ -81,12 +81,12 @@ class Terminus2(BaseAgent):
         """Return the path to the prompt template for this format."""
         if self._parser_name == "json":
             return (
-                Path(__file__).parent.parent
+                Path(__file__).parent
                 / "prompt-templates/terminus-json-plain.txt"
             )
         elif self._parser_name == "xml":
             return (
-                Path(__file__).parent.parent / "prompt-templates/terminus-xml-plain.txt"
+                Path(__file__).parent / "prompt-templates/terminus-xml-plain.txt"
             )
         else:
             raise ValueError(
@@ -95,7 +95,7 @@ class Terminus2(BaseAgent):
 
     def _get_timeout_template_path(self) -> Path:
         """Return the path to the timeout template for this format."""
-        return Path(__file__).parent.parent / "prompt-templates/timeout.txt"
+        return Path(__file__).parent / "prompt-templates/timeout.txt"
 
     def _get_error_response_type(self) -> str:
         """Return the response type name for error messages.
