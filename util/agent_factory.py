@@ -175,6 +175,7 @@ system, and deploying applications.
         ),
         model=model,
         tools=tools,
+        max_iteration=10,
         # toolkits_to_register_agent=[screenshot_toolkit],
     )
 

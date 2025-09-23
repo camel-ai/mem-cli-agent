@@ -1,0 +1,20 @@
+Summarize the following conversation as a concise **Run Log** that focuses strictly on executed commands and tool calls and their outputs.
+
+Requirements:
+- Be chronological; keep timestamps if present.
+- For each step, capture: command or tool name, exact arguments, key stdout/stderr (trimmed), exit code/finish reason, and any retries.
+- Record file system side effects: created/modified/renamed/deleted files, target paths, and brief diff/summary if stated.
+- Note environment/context changes: working directory, Docker/container name, env vars toggled, compiler flags, model or tool versions.
+- Highlight errors/warnings and how they were resolved.
+- List final artifacts (paths) and next actions.
+
+Format (Markdown):
+1) **Run Summary** – 3–5 bullets.
+2) **Commands & Outputs** – table with columns: Time | Action | Command/Tool | Output (first lines) | Exit/Reason.
+3) **File Changes**
+4) **Environment Notes**
+5) **Errors & Retries**
+6) **Artifacts**
+7) **Next Steps**
+
+Only include facts from the logs; omit general discussion or speculation.

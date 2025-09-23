@@ -11,11 +11,86 @@ from camel.models import ModelFactory
 from camel.logger import enable_logging, set_log_file, set_log_level
 from camel.types import ModelPlatformType, ModelType
 
+MODEL_TYPE = ModelType.GPT_5
+DEFAULT_SUMMARY_DIR = Path("agent_summary")
+DEFAULT_CONTEXT_FILENAME = "terminal_task.md"
+
+
+def _find_latest_context_file(
+    base_dir: Path, filename: str
+) -> Path | None:
+    """Return the newest matching context file within ``base_dir`` if any."""
+
+    try:
+        entries = list(base_dir.iterdir())
+    except FileNotFoundError:
+        return None
+
+    newest_path: Path | None = None
+    newest_mtime: float = float("-inf")
+
+    for entry in entries:
+        if not entry.is_dir():
+            continue
+
+        candidate = entry / filename
+        if not candidate.exists():
+            continue
+
+        try:
+            mtime = candidate.stat().st_mtime
+        except OSError:
+            continue
+
+        if mtime > newest_mtime:
+            newest_mtime = mtime
+            newest_path = candidate
+
+    return newest_path
+
+
+def _resolve_default_context_file() -> Path | None:
+    return _find_latest_context_file(DEFAULT_SUMMARY_DIR, DEFAULT_CONTEXT_FILENAME)
+
+
+DEFAULT_CONTEXT_FILE = _resolve_default_context_file()
+with open(Path("prompts/summary_prompt_simple.txt"), "r") as f:
+    DEFAULT_SUMMARY_PROMPT = f.read()
+
 
 class CamelTerminalAgent(BaseAgent):
     @staticmethod
     def name() -> str:
         return "CamelTerminalAgent"
+
+    def __init__(
+        self,
+        *,
+        load_context: bool = False,
+        context_working_dir: str | Path | None = None,
+        context_filename: str | Path | None = None,
+        summary_working_dir: str | Path | None = DEFAULT_SUMMARY_DIR,
+        summary_filename: str | None = None,
+        task_id: str = "terminal_task",
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.load_context = load_context
+        self.context_working_dir = (
+            Path(context_working_dir)
+            if context_working_dir is not None
+            else None
+        )
+        self.context_filename = (
+            Path(context_filename) if context_filename is not None else None
+        )
+        self.summary_working_dir = (
+            Path(summary_working_dir)
+            if summary_working_dir is not None
+            else None
+        )
+        self.summary_filename = summary_filename or f"{task_id}.md"
+        self.task_id = task_id
 
     def perform_task(
         self,
@@ -23,16 +98,7 @@ class CamelTerminalAgent(BaseAgent):
         session: TmuxSession,
         logging_dir: Path | None = "logs",
     ) -> AgentResult:
-        """Execute a task using the Terminal Bench harness.
-
-        Args:
-            instruction: The task instruction to execute
-            session: TmuxSession object for command execution
-            logging_dir: Optional directory for logging
-
-        Returns:
-            AgentResult with token counts and failure mode
-        """
+        """Execute a task using the Terminal Bench harness."""
         if logging_dir is None:
             raise ValueError("logging_dir is required for CamelTerminalAgent")
 
@@ -67,26 +133,59 @@ class CamelTerminalAgent(BaseAgent):
             "docker_container_name": container_name,
             "session_logs_dir": str(session_logs_dir),
             "safe_mode": False,
+            "timeout": 120,
         }
 
         model_backend_reason = ModelFactory.create(
             model_platform=ModelPlatformType.OPENAI,
-            model_type=ModelType.GPT_4_1,
+            model_type=MODEL_TYPE,
             model_config_dict={
                 "stream": False,
             },
         )
 
-        task_id = "terminal_task"
         camel_agent = developer_agent_factory(
             model_backend_reason,
-            task_id,
+            self.task_id,
             terminal_toolkit_kwargs,
         )
         camel_agent.reset()
 
+        if self.load_context:
+            if self.context_working_dir is None:
+                raise ValueError(
+                    "context_working_dir must be provided when load_context is True"
+                )
+            if self.context_filename is None:
+                raise ValueError(
+                    "context_filename must be provided when load_context is True"
+                )
+
+            from camel.utils.context_utils import ContextUtility
+
+            context_utility = ContextUtility(
+                working_directory=str(self.context_working_dir)
+            )
+            context_path = self.context_filename
+            if not context_path.is_absolute():
+                context_path = self.context_working_dir / context_path
+            context_utility.load_markdown_context_to_memory(
+                camel_agent,
+                filename=str(context_path),
+            )
+
         usr_msg = f"{instruction}\n"
         response = camel_agent.step(usr_msg)
+
+        summary_kwargs: dict[str, str] = {}
+        if self.summary_working_dir is not None:
+            summary_kwargs["working_directory"] = str(self.summary_working_dir)
+        if self.summary_filename is not None:
+            summary_kwargs["filename"] = self.summary_filename
+        summary_kwargs["summary_prompt"] = DEFAULT_SUMMARY_PROMPT
+
+        if summary_kwargs:
+            camel_agent.summarize(**summary_kwargs)
 
         total_input_tokens = response.info["usage"]["prompt_tokens"]
         total_output_tokens = response.info["usage"]["completion_tokens"]
@@ -112,4 +211,27 @@ class CamelTerminalAgent(BaseAgent):
             total_output_tokens=total_output_tokens,
             failure_mode=FailureMode.NONE,
             timestamped_markers=timestamped_markers,
+        )
+
+
+class CamelTerminalAgentWithContext(CamelTerminalAgent):
+    @staticmethod
+    def name() -> str:
+        return "CamelTerminalAgentWithContext"
+
+    def __init__(self, **kwargs) -> None:
+        default_context = DEFAULT_CONTEXT_FILE
+        if default_context is None:
+            raise FileNotFoundError(
+                "No context file found under agent_summary with name "
+                f"{DEFAULT_CONTEXT_FILENAME}."
+            )
+        super().__init__(
+            load_context=True,
+            context_working_dir=DEFAULT_SUMMARY_DIR,
+            context_filename=default_context,
+            summary_working_dir=DEFAULT_SUMMARY_DIR,
+            summary_filename="terminal_task.md",
+            task_id="terminal_task",
+            **kwargs,
         )
