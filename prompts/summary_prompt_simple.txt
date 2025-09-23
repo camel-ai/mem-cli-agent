@@ -1,0 +1,15 @@
+Summarize this conversation as a simple run log. Focus only on what actually happened.
+
+Include:
+- Commands that were executed
+- Files that were created/modified
+- Any errors or warnings
+- Final results
+
+Format as markdown with:
+1. **What was done** (bullets)
+2. **Commands run** (list with outputs)
+3. **Files changed** (if any)
+4. **Result** (success/failure)
+
+Be factual - only describe what actually occurred in the logs.
